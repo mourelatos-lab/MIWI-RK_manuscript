@@ -8,7 +8,8 @@ Publication details will be updated once the publication has been published.
 
 
 ## Datasets
-All datasets have been deposited in the Sequence Read Archive under the BioProject accession [PRJNA977257](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA977257).
+All datasets have been deposited in the Sequence Read Archive under the BioProject accession [PRJNA977257](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA977257) 
+(currently accessible only with reviewer's link).
 
 
 ## References
@@ -21,7 +22,7 @@ All datasets have been deposited in the Sequence Read Archive under the BioProje
 
 
 ## Code
-The following section summarizes main parts of the code needed to reproduce publication findings. 
+The following section summarizes main parts of the code needed to reproduce publication findings and figures. 
 
 ### Tools and software
 Majority of tools were installed using `conda 23.3.1`.
@@ -104,6 +105,7 @@ piRNA (**RIP-Seq**) datasets were subsampled to 85,000,000 raw reads to have app
 
 **RIP-Seq** datasets include UMI. **Ribo-Seq** and **RNA-Seq** datasets include random 3 nt at the R1 5' end and synthetically added poly(A) tail.
 
+
 ### Analysis
 
 #### Figure 2 MIWI-NTRs sustain pachytene piRNA amplification of MIWI bound piRNAs and transposon control
@@ -140,8 +142,8 @@ A. Genomic distribution of MILI and MIWI piRNAs from Miwi+/RK and MiwiRK/RK P24 
 to pachytene clusters. C. Length distribution off all piRNAs (left) or piRNA derived exclusively from pachytene clusters 
 (right). Lengths between 24 to 32 nucleotides are highlighted with dotted lines.
 ##### A. Genomic distribution of MILI and MIWI piRNAs
-- [Supplementary Figure 2](suppfigure2/suppfigure2-ab.sh)
+- [Supplementary Figure 2 A](suppfigure2/suppfigure2-ab.sh)
 ##### B. Base composition of piRNAs
-- [Supplementary Figure 2](suppfigure2/suppfigure2-ab.sh)
+- [Supplementary Figure 2 B](suppfigure2/suppfigure2-ab.sh)
 ##### C. piRNA length distribution
-- [Supplementary Figure 2](suppfigure2/suppfigure2-c.sh)
+- [Supplementary Figure 2 C](suppfigure2/suppfigure2-c.sh)
