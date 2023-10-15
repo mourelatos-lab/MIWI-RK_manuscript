@@ -26,7 +26,7 @@ The following section summarizes main parts of the code needed to reproduce publ
 ### Tools and software
 Majority of tools were installed using `conda 23.3.1`.
 
-Some analyses used different software versions than the *main* environment. This is noted in the brackes.
+Some analyses used different software versions compared to the *main* environment. This is noted in the brackes.
 
 Used software (alphabetically):
 - `bedtools 2.29.0`
@@ -37,7 +37,7 @@ Used software (alphabetically):
 - `mashmap 2.0`
 - `piPipes c93bde3`
 - `R 3.5.1`
-- `R 3.6.3` (differential expression)
+- `R 3.6.3` (differential expression/occupancy)
 - `rush 0.4.2`
 - `salmon 1.2.1`
 - `SalmonTools 23eac84`
@@ -50,23 +50,21 @@ Used software (alphabetically):
 - `umi_tools 1.0.1`
 
 Used R packages (alphabetically):
-- `optparse 1.6.2`
-- `rio 0.5.16`
+- `biomaRt 2.42.0` (differential expression/occupancy)
 - `dplyr 0.8.5`
+- `dplyr 1.0.4` (differential expression/occupancy)
+- `edgeR 3.28.0` (differential expression/occupancy)
 - `ggplot2 3.3.0`
-- `dplyr 1.0.4` (differential expression)
-- `ggplot2 3.3.3` (differential expression)
-- `gplots 3.1.1` (differential expression)
-- `RColorBrewer 1.1_2` (differential expression)
-- `grid 2.3` (differential expression)
-- `biomaRt 2.42.0` (differential expression)
-- `rtracklayer 1.46.0` (differential expression)
-- `tximport 1.14.0` (differential expression)
-- `edgeR 3.28.0` (differential expression)
-- `tibble 3.0.6` (differential expression)
-- `reshape2 1.4.4` (differential expression)
-
-
+- `ggplot2 3.3.3` (differential expression/occupancy)
+- `gplots 3.1.1` (differential expression/occupancy)
+- `grid 2.3` (differential expression/occupancy)
+- `optparse 1.6.2`
+- `RColorBrewer 1.1_2` (differential expression/occupancy)
+- `reshape2 1.4.4` (differential expression/occupancy)
+- `rio 0.5.16`
+- `rtracklayer 1.46.0` (differential expression/occupancy)
+- `tibble 3.0.6` (differential expression/occupancy)
+- `tximport 1.14.0` (differential expression/occupancy)
 
 Some general custom scripts are provided in [src](src).
 

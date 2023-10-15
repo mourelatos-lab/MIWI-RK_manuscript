@@ -1,0 +1,13 @@
+sample	name	condition	type	time	batch
+mmu.RNASeq.total.MiwiHet.P24.1	RNA.MiwiHet.P24.1	Het	RNA	P24	20202205
+mmu.RNASeq.total.MiwiHet.P24.2	RNA.MiwiHet.P24.2	Het	RNA	P24	20201311
+mmu.RNASeq.total.MiwiHet.P24.3	RNA.MiwiHet.P24.3	Het	RNA	P24	20201311
+mmu.RNASeq.total.MiwiRK.P24.1	RNA.MiwiRK.P24.1	RK	RNA	P24	20202205
+mmu.RNASeq.total.MiwiRK.P24.2	RNA.MiwiRK.P24.2	RK	RNA	P24	20201311
+mmu.RNASeq.total.MiwiRK.P24.3	RNA.MiwiRK.P24.3	RK	RNA	P24	20201311
+mmu.RIBOSeq.total.MiwiHet.P24.1	RIBO.MiwiHet.P24.1	Het	RIBO	P24	20202205
+mmu.RIBOSeq.total.MiwiHet.P24.2	RIBO.MiwiHet.P24.2	Het	RIBO	P24	20201311
+mmu.RIBOSeq.total.MiwiHet.P24.3	RIBO.MiwiHet.P24.3	Het	RIBO	P24	20201311
+mmu.RIBOSeq.total.MiwiRK.P24.1	RIBO.MiwiRK.P24.1	RK	RIBO	P24	20202205
+mmu.RIBOSeq.total.MiwiRK.P24.2	RIBO.MiwiRK.P24.2	RK	RIBO	P24	20201311
+mmu.RIBOSeq.total.MiwiRK.P24.3	RIBO.MiwiRK.P24.3	RK	RIBO	P24	20201311

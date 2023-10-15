@@ -1,6 +1,8 @@
 #!/usr/bin/env Rscript
 #
-# Calculate differential gene expression and some basic stats
+# Calculating Ribo-Seq differential occupancy
+#
+# IMPORTANT: Ribosome occupancy MUST be run after RNA expression. It uses RNA expression to normalize ribosome occupancy.
 #
 
 suppressPackageStartupMessages(library(dplyr)) # Loaded later on because of conflicts with biomaRt
@@ -14,6 +16,7 @@ library(tximport)
 suppressPackageStartupMessages(library(edgeR))
 # suppressMessages(library(tibble)) # Only used once to rename
 # suppressMessages(library(reshape2)) # Only used once to melt df
+# stringr # loaded only for a few operations
 
 ################################################################################
 
@@ -37,29 +40,32 @@ print(options.args)
 if (length(options.args) < 1) {
   options.args <- character(1)
   names(options.args) <- "help"
-} else if (length(options.args) < 11) {
+} else if (length(options.args) < 12) {
   stop("Please specify all arguments.", call. = FALSE)
 }
 
 # Help section
 if ("help" %in% names(options.args)) {
   cat("Usage:
-    ./de.R --samples input file(s) --odir output plot in pdf ...
+    ./de-occupancy.R --samples input file(s) --odir output plot in pdf ...
 
-    For example: ./de.R \
-    --samples mmu.RNASeq.Het.P24.1 mmu.RNASeq.RK.P24.1 \
+    For example: ./de-occupancy.R \
+    --samples mmu.RNASeq.total.MiwiHet.P24.1 mmu.RNASeq.total.MiwiHet.P24.2 mmu.RNASeq.total.MiwiHet.P24.3 \
+        mmu.RNASeq.total.MiwiRK.P24.1 mmu.RNASeq.total.MiwiRK.P24.2 mmu.RNASeq.total.MiwiRK.P24.3 \
+        mmu.RIBOSeq.total.MiwiHet.P24.1 mmu.RIBOSeq.total.MiwiHet.P24.2 mmu.RIBOSeq.total.MiwiHet.P24.3 \
+        mmu.RIBOSeq.total.MiwiRK.P24.1 mmu.RIBOSeq.total.MiwiRK.P24.2 mmu.RIBOSeq.total.MiwiRK.P24.3
     --idir /home/joppelt/projects/pirna_mouse/samples \
     --gtf /home/joppelt/projects/pirna_mouse/data/mm10/Mus_musculus.GRCm38.99.gtf \
-    --odir /home/joppelt/projects/pirna_mouse/analysis/expression/results \
-    --design /home/joppelt/projects/pirna_mouse/analysis/expression/data/design-rna.txt \
+    --odir /home/joppelt/projects/pirna_mouse/analysis/degradome-occupancy/results \
+    --design /home/joppelt/projects/pirna_mouse/analysis/degradome-occupancy/data/design.txt  \
     --pval 0.1 \
     --fc 2 \
+    --reftype RNA \
     --compcond1 Het \
     --compcond2 RK \
     --refcond Het \
-    --counts salmon \
     --replicates TRUE \
-    --batch TRUE
+    --counts salmon
     ")
   q(save = "no")
 }
@@ -73,12 +79,14 @@ resdir <- options.args$odir
 design_tab <- options.args$design
 pvalset <- as.numeric(options.args$pval)
 fcset <- as.numeric(options.args$fc)
+reftype <- options.args$reftype
 compcond1 <- options.args$compcond1 # compare condition 1
 compcond2 <- options.args$compcond2 # compare condition 2
 refcond <- options.args$refcond # reference condition
 counts <- options.args$counts # [salmon|classic] using Salmon or "classic" counts such as STAR or featureCounts
 ifile <- options.args$ifile # if we have 'classic' counts, we have should specific input file with merged counts; if NULL then we scan for *counts.merged.tab and hope it's there only once
-batchCor <- options.args$batch # attempt batch correction if there is enough conditions/sample; main purpose is to disable batch correction if we don't want it
+rnaseq <- options.args$rnaseq
+genes_to_viz <- options.args$genes_to_viz # Comma-separate list of genes to visualize (=name) in 'opposite' plots
 
 if (is.null(options.args$replicates)) {
   repl <- TRUE # Default if no value was given
@@ -86,6 +94,10 @@ if (is.null(options.args$replicates)) {
   repl <- as.logical(options.args$replicates)
 }
 min_count <- 10 # so far used only for stats of total exp. genes
+
+if (!is.null(genes_to_viz)) {
+  genes_to_viz <- strsplit(genes_to_viz, ",")[[1]]
+}
 
 ################################################################################
 fcset <- log(fcset, 2)
@@ -95,7 +107,7 @@ if (is.null(counts)) {
   counts <- "salmon"
 }
 
-resdir <- paste(resdir, "de", paste0(compcond2, "vs", compcond1), sep = "/")
+resdir <- paste(resdir, "de_occupancy", paste0(compcond2, "vs", compcond1), sep = "/")
 dir.create(resdir, recursive = T)
 
 coldata <- read.table(design_tab, sep = "\t", header = T, stringsAsFactors = F)
@@ -107,9 +119,7 @@ if (!file.exists(paste(resdir, "data", "mart-desc.tsv", sep = "/"))) {
   # This will work ok for human and mouse. For other organisms please change gene_name variable specific for that organism
   # Get Ensembl host
   ens <- biomaRt::listEnsemblArchives()
-  ens_version <- strsplit(ingtf, ".", fixed = T)[[1]][3]
-  ens_version <- gsub("-w_.*", "", ens_version) # Strip spikein from the version if it exists (we name ref. gtf with spikein as Mus_musculus.GRCm38.99-w_ercc.gtf, for example
-  ens_host <- ens[ens$version == ens_version, "url"]
+  ens_host <- ens[ens$version == strsplit(ingtf, ".", fixed = T)[[1]][3], "url"]
   ens_host <- gsub("http://", "", ens_host)
 
   # Get organism
@@ -179,6 +189,18 @@ if (!("condition" %in% colnames(coldata))) {
 } else {
   "Using \"condition\" column from input design table"
 }
+if (!("type" %in% colnames(coldata))) {
+  print("No \"type\" column in input design table, guessing from the bamlist")
+  coldata$type <- bamlist %>%
+    gsub("Seq", "", .) %>%
+    stringr::str_split(stringr::fixed("."), simplify = T) %>%
+    as.data.frame() %>%
+    dplyr::select(V2) %>%
+    unlist()
+} else {
+  "Using \"type\" column from input design table"
+}
+coldata$condition2 <- paste0(coldata$type, coldata$condition)
 
 if (repl == FALSE) { # Set batches/patients
   print("\"repl\" set to false, filling up \"batch\" column randomly")
@@ -194,9 +216,28 @@ if (repl == FALSE) { # Set batches/patients
   stop("Please set --replicates to either TRUE or FALSE")
 }
 
+# Order coldata by reftype and refcond
+coldata.tmp <- coldata[grep(reftype, coldata$type), ]
+coldata.tmp2 <- coldata.tmp[grep(refcond, coldata.tmp$condition), ]
+coldata.ready <- rbind(coldata.tmp2, coldata.tmp[grep(refcond, coldata.tmp$condition, invert = T), ])
+
+coldata.tmp <- coldata[grep(reftype, coldata$type, invert = T), ]
+coldata.tmp2 <- coldata.tmp[grep(refcond, coldata.tmp$condition), ]
+coldata.ready <- rbind(
+  coldata.ready,
+  rbind(coldata.tmp2, coldata.tmp[grep(refcond, coldata.tmp$condition, invert = T), ])
+)
+
+coldata <- coldata.ready
+
 # make sure all are factors
 coldata$condition <- factor(coldata$condition, levels = unique(coldata$condition))
+coldata$type <- factor(coldata$type, levels = unique(coldata$type))
+coldata$condition2 <- factor(coldata$condition2, levels = unique(coldata$condition2))
 coldata$batch <- factor(coldata$batch, levels = unique(coldata$batch))
+
+coldata$condition <- relevel(coldata$condition, ref = refcond)
+coldata$type <- relevel(coldata$type, ref = reftype)
 coldata$condition <- relevel(coldata$condition, ref = refcond)
 coldata$batch <- relevel(coldata$batch, ref = levels(coldata$batch)[1])
 
@@ -235,7 +276,7 @@ if (!all(file.exists(files))) {
 # Get gene annotation (mainly to remove rRNA later on)
 if (!file.exists(paste(resdir, "data", "mart-desc.tsv", sep = "/"))) {
   if (file.exists(ingtf)) {
-    print("Reaging and parsing input gtf for description file.")
+    print("Reading and parsing input gtf for description file.")
 
     desc <- as.data.frame(rtracklayer::import(ingtf, format = "gtf")) # Load GTF
 
@@ -316,7 +357,12 @@ if (counts == "salmon" | is.null(counts)) {
   txi$counts <- txi$counts[keep, ]
 }
 
-# Prepare counts for edgeR https://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html#edger
+################################ VERY ROUGH BETA ###############################
+## Differential ribosome loading analysis (translational efficiency)
+# Here (http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeRIBOseq.html#11_differential_ribosome_loading_analysis_(translational_efficiency)),
+#   they recommend DESeq2 with full and reduced formula but I have no idea how to force edgeR to use
+#   reduced formula
+
 cts <- txi$counts
 cts <- cts[, coldata$name] # Make sure cts and design are ordered the same
 
@@ -339,10 +385,10 @@ if (counts == "salmon" | is.null(counts)) {
   normMat <- log(normMat)
 
   # Creating a DGEList object for use in edgeR.
-  y <- DGEList(cts, group = coldata$condition) # genes=rownames(cts) would be more usefull if we would put here some external annotation and then filter according to that
+  y <- DGEList(cts, group = coldata$condition2) # genes=rownames(cts) would be more usefull if we would put here some
   y <- scaleOffset(y, normMat)
 } else {
-  y <- DGEList(cts, group = coldata$condition) # genes=rownames(cts) would be more usefull if we would put here some
+  y <- DGEList(cts, group = coldata$condition2) # genes=rownames(cts) would be more usefull if we would put here some
   txi$abundance <- cpm(y)[, colnames(cts)]
 }
 
@@ -350,7 +396,12 @@ if (counts == "salmon" | is.null(counts)) {
 isexpr <- rowSums(y$counts) > 0
 
 keep <- filterByExpr(y, group = coldata$condition) # edgeR manual specifies we should not use "baseline" coldata for this filtering but only the "difference" condition
+print("Number of genes before expression filtering:")
+nrow(y)
 y <- y[isexpr & keep, ]
+print("Number of genes after expression filtering:")
+nrow(y)
+# y is now ready for estimate dispersion functions see edgeR User's Guide
 
 # Get stats of # of expressed genes and exp. distribution
 exp_genes <- reshape2::melt(as.matrix(cts)) %>%
@@ -361,7 +412,10 @@ exp_genes <- reshape2::melt(as.matrix(cts)) %>%
 p <- ggplot(exp_genes, aes(x = Var2, y = exp_genes, fill = Var2)) +
   geom_bar(stat = "identity") +
   theme_minimal() +
-  theme(legend.position = "bottom", legend.text = element_text(size = rel(0.5)), legend.title = element_blank()) +
+  theme(
+    legend.position = "bottom", legend.text = element_text(size = rel(0.5)),
+    legend.title = element_blank(), axis.text.x = element_blank()
+  ) +
   guides(fill = guide_legend(nrow = 4)) +
   xlab("Library") +
   ylab("Number of expressed genes")
@@ -369,7 +423,10 @@ p <- ggplot(exp_genes, aes(x = Var2, y = exp_genes, fill = Var2)) +
 p2 <- ggplot(exp_genes, aes(x = Var2, y = raw_expr, fill = Var2)) +
   geom_bar(stat = "identity") +
   theme_minimal() +
-  theme(legend.position = "bottom", legend.text = element_text(size = rel(0.5)), legend.title = element_blank()) +
+  theme(
+    legend.position = "bottom", legend.text = element_text(size = rel(0.5)),
+    legend.title = element_blank(), axis.text.x = element_blank()
+  ) +
   guides(fill = guide_legend(nrow = 4)) +
   xlab("Library") +
   ylab("Total raw expression")
@@ -383,7 +440,10 @@ log2abund_forplot <- reshape2::melt(as.matrix(txi$abundance)) %>%
 p3 <- ggplot(log2abund_forplot, aes(x = Var2, y = log2abund, fill = Var2)) +
   geom_boxplot() +
   theme_minimal() +
-  theme(legend.position = "bottom", legend.text = element_text(size = rel(0.5)), legend.title = element_blank()) +
+  theme(
+    legend.position = "bottom", legend.text = element_text(size = rel(0.5)),
+    legend.title = element_blank(), axis.text.x = element_blank()
+  ) +
   guides(fill = guide_legend(nrow = 4)) +
   xlab("Library") +
   ylab("log2Abundance")
@@ -411,31 +471,40 @@ pdf(paste(resdir, "exp-genes.pdf", sep = "/"))
   print(p4)
 dev.off()
 
+# Contrast to compare
+# I don't know how to make contrast that would reflect the interaction RNA/RIBO:Het/RK
+# We have to rely on the last column as comparion for the statistical test
 condsToCompare <- c(compcond1, compcond2)
 
-# Decision of replicates true/false
-if (repl == FALSE) { # We don't have replicates so we have to cheat - edgeR manual - 2.12 What to do if you have no replicates
-  print("We don't have replicates, cheating dispersion with bcv = 0.4")
-  bcv <- 0.4
-  et <- exactTest(y, dispersion = bcv^2, pair = c(condsToCompare[1], condsToCompare[2]))
-  d <- y # Copy for compatibility reasons downstream
-  test.save <- "exactTest"
-  mydesign <- paste("No replicates, used", test.save, "to test for expression differences.")
-} else if (repl == TRUE) { # If we would have replicates we could do the proper testing
-  print("We have replicates, hurray!")
-  if ((batchCor == TRUE) && (sum(table(coldata$batch) >= 2) >= 2)) {
-    print("Using batch correction.")
-    mydesign <- model.matrix(~ batch + condition, data = coldata) # RK could be considered treatment of Het, we'll use intercept; otherwise change to ~0+condition
-  } else {
-    print("Not using batch correction.")
-    mydesign <- model.matrix(~condition, data = coldata) # RK could be considered treatment of Het, we'll use intercept; otherwise change to ~0+condition
-  }
+# From riborex (https://github.com/smithlabcode/riborex/blob/master/R/riborex.r)
+#   and DTEG (https://github.com/SGDDNB/translational_regulation/blob/master/DTEG.R)
+#   and RiboDiff https://academic.oup.com/bioinformatics/article/33/1/139/2525694
+#   the design should be ~ Condition + SeqType + Condition:SeqType
+if (sum(table(coldata$batch) >= 2) >= 2) {
+  print("Using batch correction.")
+  mydesign <- model.matrix(~ batch + condition + type + condition:type, data = coldata) # RK could be considered treatment of WT, we'll use intercept; otherwise change to ~0+condition
+} else {
+  print("Not using batch correction.")
+  mydesign <- model.matrix(~ condition + type + condition:type, data = coldata) # RK could be considered treatment of WT, we'll use intercept; otherwise change to ~0+condition
+}
 
-  d <- estimateGLMCommonDisp(y, mydesign) # Calculate GLM for common dispersion
+d <- estimateGLMCommonDisp(y, mydesign) # Calculate GLM for common dispersion
+
+# We don't have replicates so we have to cheat
+test.save <- NULL
+if (repl == FALSE) { # We don't have replicates so we have to cheat - edgeR manual - 2.12 What to do if you have no replicates
+  print("We don't have replicates, cheaing dispersion with bcv = 0.4^2 and edgeR::glmFit and edgeR::glmLRT.")
+  test.save <- "likelihood-noreplicates"
+
+  d$common.dispersion <- bcv^2
+  fit_common <- glmFit(d, mydesign, dispersion = d$common.dispersion)
+  lrt_common <- glmLRT(fit_common) # , coef = 4; , contrast=my.contrasts[, "contrast"]
+  et <- lrt_common
+} else if (repl == TRUE) {
   d <- estimateGLMTrendedDisp(d, mydesign) # Calculate GLM for trended dispersion
   d <- estimateGLMTagwiseDisp(d, mydesign) # Calculate GLM for tagwise dispersion
 
-  if (sum(table(coldata$condition)[names(table(coldata$condition)) %in% c(condsToCompare[1], condsToCompare[2])] > 2) >= 2) {
+  if (sum(table(coldata$condition2) > 2) >= 2) {
     print("We have OK number of replicates, going for edgeR::glmFit & edgeR::glmLRT. If you have >=6 replicates consider switching to DESeq2.")
     test.save <- "likelihood" # help for next calculations
 
@@ -447,44 +516,29 @@ if (repl == FALSE) { # We don't have replicates so we have to cheat - edgeR manu
     fit_tgw <- glmQLFit(d, mydesign, dispersion = d$tagwise.dispersion) # fit_tgw<-glmFit(d, mydesign, dispersion=d$tagwise.dispersion); Fit tagwise dispersion;  fit_tgw<-glmQLFit(d, mydesign, dispersion=d$tagwise.dispersion) can be used if the number of replicates is low; QL (glmQLFit and glmQLFTest) is more strict in the assumptions ~ increases adj.pvalues
   }
 
-  if (!length(grep(paste0("condition", condsToCompare[1], "$"), colnames(fit_tgw$design)))) { # If I cannot find condsToCompare[1] (usually intercept) set contrast as 1 for condsToCompare2
-    my.contrasts <- makeContrasts( # Should create contrasts; if we have intercept and we want to compare coef=2 it should be the same as contrast=c(0, -1, 0) but it might be misunderstood because there is actually no contrast https://www.biostars.org/p/102036/
-      postvspre = paste0(colnames(fit_tgw$design)[grep(paste0("condition", condsToCompare[2], "$"), colnames(fit_tgw$design))]), levels = fit_tgw$design
-    ) # https://stackoverflow.com/questions/26813667/how-to-use-grep-to-find-exact-match
-  } else { # Else make proper contrast
-    my.contrasts <- makeContrasts( # Should create contrasts; if we have intercept and we want to compare coef=2 it should be the same as contrast=c(0, -1, 0) but it might be misunderstood because there is actually no contrast https://www.biostars.org/p/102036/
-      postvspre = paste0(
-        colnames(fit_tgw$design)[grep(paste0("condition", condsToCompare[2], "$"), colnames(fit_tgw$design))],
-        "-",
-        colnames(fit_tgw$design)[grep(paste0("condition", condsToCompare[1], "$"), colnames(fit_tgw$design))]
-      ), levels = fit_tgw$design
-    )
-  }
-  colnames(my.contrasts) <- "contrast"
-
   if (test.save == "likelihood") {
-    et <- glmLRT(fit_tgw, contrast = my.contrasts[, "contrast"]) # If we have 3 conditions and want to compare 3 vs 1 we set contrast=c(0, -1, 1), if we want to compare 3 vs 1 or 2 vs 1 we just set coef=3 or coef=2, respectively; some more examples of contrast https://www.biostars.org/p/110861/
+    et <- glmLRT(fit_tgw) # If we have 3 conditions and want to compare 3 vs 1 we set contrast=c(0, -1, 1), if we want to compare 3 vs 1 or 2 vs 1 we just set coef=3 or coef=2, respectively; some more examples of contrast https://www.biostars.org/p/110861/
   } else if (test.save == "quasi-likelihood") {
-    et <- glmQLFTest(fit_tgw, contrast = my.contrasts[, "contrast"]) # If we have 3 conditions and want to compare 3 vs 1 we set contrast=c(0, -1, 1), if we want to compare 3 vs 1 or 2 vs 1 we just set coef=3 or coef=2, respectively; some more examples of contrast https://www.biostars.org/p/110861/
+    et <- glmQLFTest(fit_tgw) # If we have 3 conditions and want to compare 3 vs 1 we set contrast=c(0, -1, 1), if we want to compare 3 vs 1 or 2 vs 1 we just set coef=3 or coef=2, respectively; some more examples of contrast https://www.biostars.org/p/110861/
   }
 } else {
   stop("Don't know what to do, --replicates not set to TRUE or FALSE")
 }
 
 sink(paste(resdir, "design-control.txt", sep = "/"))
-subset(cbind(coldata, d$samples), select = -c(group))
+  subset(cbind(coldata, d$samples), select = -c(group))
 sink()
 
 sink(paste(resdir, "formula-control.txt", sep = "/"))
-mydesign
+  mydesign
 sink()
 
 sink(paste(resdir, "de-summary.txt", sep = "/"))
-print(paste("Compared conditions:", paste(condsToCompare, collapse = ":")))
-print(paste("Used test:", test.save))
-print(paste("LogFC:", fcset))
-print(paste("Adj.p-value:", pvalset))
-print(summary(decideTestsDGE(et, adjust.method = "BH", p.value = pvalset, lfc = fcset))) # Summary
+  print(paste("Compared conditions:", paste(condsToCompare[2], condsToCompare[1], sep = ":")))
+  print(paste("Used test:", test.save))
+  print(paste("LogFC:", fcset))
+  print(paste("Adj.p-value:", pvalset))
+  print(summary(decideTestsDGE(et, adjust.method = "BH", p.value = pvalset, lfc = fcset))) # Summary
 sink()
 
 et.adj <- topTags(et, n = Inf, adjust.method = "BH", sort.by = "p.value") # Add FDR adjustment/correction
@@ -567,20 +621,29 @@ if (length(grep("-abundance", colnames(et))) > 0) {
 
 et$logAbundance <- et %>%
   dplyr::select(ends_with("-abundance")) %>%
+  dplyr::select(!starts_with("RNA")) %>%
   rowMeans() %>%
   log2()
 
+et$logAbundance_RNA <- et %>%
+  dplyr::select(ends_with("-abundance")) %>%
+  dplyr::select(starts_with("RNA")) %>%
+  rowMeans() %>%
+  log2()
+
+et$logAbundance_ratio <- et$logAbundance / et$logAbundance_RNA
+
 # Add expression bins
 # Make 20 even groups by expression
-quants <- quantile(et$logAbundance, probs = seq(0, 1, 0.05)) # just print the quartiles
+quants <- quantile(et$logAbundance_RNA, probs = seq(0, 1, 0.05)) # just print the quartiles
 quants
 if (any(duplicated(quants))) { # If we have any duplicated quants just add a tiny number
   print("There are duplicated quantile limits, adding a tiny number.")
   quants[duplicated(quants)] <- quants[duplicated(quants)] + runif(sum(duplicated(quants)), 1e-9, 1e-8)
 }
-et <- within(et, AbundanceBin <- as.integer(cut(et$logAbundance, quants, include.lowest = TRUE))) # https://stackoverflow.com/questions/7508229/how-to-create-a-column-with-a-quartile-rank
+et <- within(et, Abundance_RNABin <- as.integer(cut(et$logAbundance_RNA, quants, include.lowest = TRUE), include.lowest = TRUE)) # https://stackoverflow.com/questions/7508229/how-to-create-a-column-with-a-quartile-rank
 
-et <- et[order(et$`PValueAdj`, et$`PValue`, -abs(et$`logFC`), -et$`logAbundance`), ]
+et <- et[order(et$`PValueAdj`, et$`PValue`, -abs(et$`logFC`), -et$`logAbundance_RNA`), ]
 
 # Reorganize columns
 abund_cols <- grep("Abundance", colnames(et))

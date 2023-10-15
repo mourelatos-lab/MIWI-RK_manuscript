@@ -1,0 +1,15 @@
+- `optparse 1.6.2`
+- `rio 0.5.16`
+- `dplyr 0.8.5`
+- `ggplot2 3.3.0`
+- `dplyr 1.0.4` (differential expression/occupancy)
+- `ggplot2 3.3.3` (differential expression/occupancy)
+- `gplots 3.1.1` (differential expression/occupancy)
+- `RColorBrewer 1.1_2` (differential expression/occupancy)
+- `grid 2.3` (differential expression/occupancy)
+- `biomaRt 2.42.0` (differential expression/occupancy)
+- `rtracklayer 1.46.0` (differential expression/occupancy)
+- `tximport 1.14.0` (differential expression/occupancy)
+- `edgeR 3.28.0` (differential expression/occupancy)
+- `tibble 3.0.6` (differential expression/occupancy)
+- `reshape2 1.4.4` (differential expression/occupancy)

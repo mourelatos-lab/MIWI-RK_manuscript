@@ -47,7 +47,7 @@ if ("help" %in% names(options.args)) {
     ./de.R --samples input file(s) --odir output plot in pdf ...
 
     For example: ./de.R \
-    --samples mmu.RNASeq.Het.P24.1 mmu.RNASeq.RK.P24.1 \
+    --samples mmu.RNASeq.Het.P24.1 mmu.RNASeq.Het.P24.2 mmu.RNASeq.Het.P24.3 mmu.RNASeq.RK.P24.1 mmu.RNASeq.RK.P24.2 mmu.RNASeq.RK.P24.3 \
     --idir /home/joppelt/projects/pirna_mouse/samples \
     --gtf /home/joppelt/projects/pirna_mouse/data/mm10/Mus_musculus.GRCm38.99.gtf \
     --odir /home/joppelt/projects/pirna_mouse/analysis/expression/results \
@@ -235,7 +235,7 @@ if (!all(file.exists(files))) {
 # Get gene annotation (mainly to remove rRNA later on)
 if (!file.exists(paste(resdir, "data", "mart-desc.tsv", sep = "/"))) {
   if (file.exists(ingtf)) {
-    print("Reaging and parsing input gtf for description file.")
+    print("Reading and parsing input gtf for description file.")
 
     desc <- as.data.frame(rtracklayer::import(ingtf, format = "gtf")) # Load GTF
 
@@ -350,7 +350,12 @@ if (counts == "salmon" | is.null(counts)) {
 isexpr <- rowSums(y$counts) > 0
 
 keep <- filterByExpr(y, group = coldata$condition) # edgeR manual specifies we should not use "baseline" coldata for this filtering but only the "difference" condition
+print("Number of genes before expression filtering:")
+nrow(y)
 y <- y[isexpr & keep, ]
+print("Number of genes after expression filtering:")
+nrow(y)
+# y is now ready for estimate dispersion functions see edgeR User's Guide
 
 # Get stats of # of expressed genes and exp. distribution
 exp_genes <- reshape2::melt(as.matrix(cts)) %>%
@@ -472,19 +477,19 @@ if (repl == FALSE) { # We don't have replicates so we have to cheat - edgeR manu
 }
 
 sink(paste(resdir, "design-control.txt", sep = "/"))
-subset(cbind(coldata, d$samples), select = -c(group))
+  subset(cbind(coldata, d$samples), select = -c(group))
 sink()
 
 sink(paste(resdir, "formula-control.txt", sep = "/"))
-mydesign
+  mydesign
 sink()
 
 sink(paste(resdir, "de-summary.txt", sep = "/"))
-print(paste("Compared conditions:", paste(condsToCompare, collapse = ":")))
-print(paste("Used test:", test.save))
-print(paste("LogFC:", fcset))
-print(paste("Adj.p-value:", pvalset))
-print(summary(decideTestsDGE(et, adjust.method = "BH", p.value = pvalset, lfc = fcset))) # Summary
+  print(paste("Compared conditions:", paste(condsToCompare, collapse = ":")))
+  print(paste("Used test:", test.save))
+  print(paste("LogFC:", fcset))
+  print(paste("Adj.p-value:", pvalset))
+  print(summary(decideTestsDGE(et, adjust.method = "BH", p.value = pvalset, lfc = fcset))) # Summary
 sink()
 
 et.adj <- topTags(et, n = Inf, adjust.method = "BH", sort.by = "p.value") # Add FDR adjustment/correction

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Calculate differential expression
+# Calculate differential repeats expression
 #
 
 refdir="$(pwd)/data/mm10" # Reference genome/annotation directory; full path
@@ -9,11 +9,10 @@ sampledir=$(pwd) # Directory with preprocessed and mapped samples
 threads=12
 rnd=$RANDOM
 
-mkdir -p expression/run
-cd expression
+mkdir -p repeats/run
+cd repeats/
 
 ################################################################################
-
 samples=(
     "mmu.RNASeq.total.MiwiHet.P24.1"
     "mmu.RNASeq.total.MiwiHet.P24.2"
@@ -76,7 +75,7 @@ for name in ${samples[@]}; do
 done
 
 # SQuIRE differential expression
-sdir=rna/squire_repeats/de
+sdir="rna/squire_repeats/de"
 mkdir -p $sdir/subfamily
 
 for name in ${samples[@]}; do
