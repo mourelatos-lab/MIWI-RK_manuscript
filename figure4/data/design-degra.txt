@@ -1,0 +1,11 @@
+sample	name	condition	type	time	batch
+mmu.RNASeq.total.MiwiHet.P24.1	RNA.MiwiHet.P24.1	Het	RNA	P24	1
+mmu.RNASeq.total.MiwiHet.P24.2	RNA.MiwiHet.P24.2	Het	RNA	P24	2
+mmu.RNASeq.total.MiwiHet.P24.3	RNA.MiwiHet.P24.3	Het	RNA	P24	3
+mmu.RNASeq.total.MiwiRK.P24.1	RNA.MiwiRK.P24.1	RK	RNA	P24	4
+mmu.RNASeq.total.MiwiRK.P24.2	RNA.MiwiRK.P24.2	RK	RNA	P24	5
+mmu.RNASeq.total.MiwiRK.P24.3	RNA.MiwiRK.P24.3	RK	RNA	P24	6
+mmu.PARESeq.polya.MiwiHet.P24.1	PARE.MiwiHet.P24.1	Het	DEGRA	P24	7
+mmu.PARESeq.polya.MiwiHet.P24.2	PARE.MiwiHet.P24.2	Het	DEGRA	P24	8
+mmu.PARESeq.polya.MiwiRK.P24.1	PARE.MiwiRK.P24.1	RK	DEGRA	P24	9
+mmu.PARESeq.polya.MiwiRK.P24.2	PARE.MiwiRK.P24.2	RK	DEGRA	P24	10

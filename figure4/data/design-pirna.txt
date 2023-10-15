@@ -1,0 +1,9 @@
+sample	name	condition	type	time	batch
+mmu.RIPSeq.MiwiIP.MiwiHet.P24.2	MiwiIP.MiwiHet.P24.2	Het	piRNA	P24	20212209
+mmu.RIPSeq.MiwiIP.MiwiHet.P24.3	MiwiIP.MiwiHet.P24.3	Het	piRNA	P24	20222907
+mmu.RIPSeq.MiliIP.MiwiHet.P24.1	MiliIP.MiwiHet.P24.1	Het	piRNA	P24	20212209
+mmu.RIPSeq.MiliIP.MiwiHet.P24.2	MiliIP.MiwiHet.P24.2	Het	piRNA	P24	20222907
+mmu.RIPSeq.MiwiIP.MiwiRK.P24.2	MiwiIP.MiwiRK.P24.2	RK	piRNA	P24	20212209
+mmu.RIPSeq.MiwiIP.MiwiRK.P24.3	MiwiIP.MiwiRK.P24.3	RK	piRNA	P24	20222907
+mmu.RIPSeq.MiliIP.MiwiRK.P24.1	MiliIP.MiwiRK.P24.1	RK	piRNA	P24	20212209
+mmu.RIPSeq.MiliIP.MiwiRK.P24.2	MiliIP.MiwiRK.P24.2	RK	piRNA	P24	20222907

@@ -1,0 +1,33 @@
+# get Perl virtual environment for custom Perl scripts
+
+git clone https://github.com/jizhang/perl-virtualenv.git
+cd perl-virtualenv/
+
+chmod u+x virtualenv.pl
+./virtualenv.pl venv
+source venv/bin/activate
+which perl
+perl -v
+which cpanm
+cpanm -v
+deactivate
+which perl
+perl -v
+which cpanm
+cpanm -v
+
+# if something doesn't work you might try adding --force
+cpanm inc::Module::Install
+cpanm autodie
+cpanm DBI
+cpanm Devel::Size
+cpanm Getopt::Long::Descriptive
+cpanm IO::File
+cpanm IO::Interactive
+cpanm IO::Uncompress::Gunzip
+cpanm Params::Validate
+cpanm Params::Util
+cpanm Sub::Install
+cpanm Modern::Perl
+cpanm MooseX::App::Simple
+cpanm MooseX::Getopt::Meta::Attribute::Trait::NoGetopt
