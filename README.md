@@ -86,6 +86,7 @@ Data directory structure:
 - `data/assemblyName/Mus_musculus.GRCm38.99.gtf`: Ensembl gene annotation; Ensembl release version necessary for differential expression calculation
 - `data/assemblyName/ensembl_genes.gtf`: Ensembl gene annotation; Can be a link to full-name Ensembl annotation
 - `data/assemblyName/rRNA.bed`: rRNA genomic locations
+- `data/assemblyName/rRNA.fa`: rRNA sequences without duplicates
 - `data/assemblyName/pirna-clusters.bed`: piRNA clusters
 - `data/assemblyName/rmsk.bed`: RepeatMasker repeats
 - `data/assemblyName/rmsk_categ.tab`: RepeatMasker repeats with categories -> Download UCSC RMSK table with columns swScore, genoName, genoStart, genoEnd, strand, repClass
@@ -139,8 +140,8 @@ A. Genomic distribution of MILI and MIWI piRNAs from Miwi+/RK and MiwiRK/RK P24 
 to pachytene clusters. C. Length distribution off all piRNAs (left) or piRNA derived exclusively from pachytene clusters 
 (right). Lengths between 24 to 32 nucleotides are highlighted with dotted lines.
 ##### A. Genomic distribution of MILI and MIWI piRNAs
-- [Supplementary Figure 2](suppfigure2/suppfigure2-a.sh)
+- [Supplementary Figure 2](suppfigure2/suppfigure2-ab.sh)
 ##### B. Base composition of piRNAs
-- [Supplementary Figure 2](suppfigure2/suppfigure2-b.sh)
+- [Supplementary Figure 2](suppfigure2/suppfigure2-ab.sh)
 ##### C. piRNA length distribution
 - [Supplementary Figure 2](suppfigure2/suppfigure2-c.sh)

@@ -26,7 +26,7 @@ samples=(
 
 # BAM to BED
 for name in "${samples[@]}"; do
-    sdir=$RES_DIR/$name
+    sdir=$name
     mkdir -p $sdir
 
     echo -n "
@@ -39,7 +39,7 @@ cat run/cmds.$rnd.txt | rush '{}' -j $threads --verbose && rm run/cmds.$rnd.txt
 
 # split +/- mapped; get only starts
 for name in "${samples[@]}"; do
-    sdir=$RES_DIR/$name
+    sdir=$name
     mkdir -p $sdir
 
     echo -n "
@@ -55,7 +55,7 @@ cat run/cmds.$rnd.txt | rush '{}' -j $threads --verbose && rm run/cmds.$rnd.txt
 # should be reciprocal since we have -sw and the pairs are "unique" = there is only one match of + and - reads in the ping-pong pair
 wind=30
 for name in "${samples[@]}"; do
-    sdir=$RES_DIR/$name
+    sdir=$name
     mkdir -p $sdir
 
     echo -n "
@@ -70,7 +70,7 @@ cat run/cmds.$rnd.txt | rush '{}' -j $threads --verbose && rm run/cmds.$rnd.txt
 clusters=$refdir/pirna-clusters.bed
 
 for name in "${samples[@]}"; do
-    sdir=$RES_DIR/$name
+    sdir=$name
     mkdir $sdir
 
     echo -n "
@@ -89,7 +89,7 @@ cat run/cmds.$rnd.txt | rush '{}' -j $threads --verbose && rm run/cmds.$rnd.txt
 repeats==$refdir/rmsk.bed
 
 for name in "${samples[@]}"; do
-    sdir=$RES_DIR/$name
+    sdir=$name
     mkdir $sdir
 
     echo -n "
@@ -105,7 +105,7 @@ cat run/cmds.$rnd.txt | rush '{}' -j $threads --verbose && rm run/cmds.$rnd.txt
 header="chr\tstart\tend\tname\tscore\tstrand\tlength\tchr_ovl\tstart_ovl\tend_ovl\tname_ovl\tscore_ovl\tstrand_ovl\tlength_ovl"
 
 for name in "${samples[@]}"; do
-    sdir=$RES_DIR/$name
+    sdir=$name
     mkdir $sdir
 
     for bed in $(find $sdir -regextype posix-extended -regex '.*(pirna_clusters).*.bed.gz'); do
@@ -124,8 +124,7 @@ done
 
 # make plots
 for name in "${samples[@]}"; do
-    echo $name
-    sdir=$RES_DIR/$name
+    sdir=$name
     mkdir $sdir
 
     # Only uniquely mapped reads

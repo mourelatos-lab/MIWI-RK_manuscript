@@ -158,7 +158,7 @@ for name in "${samples[@]}"; do
     echo -e "chr\tstart\tend\tname\tscore\tstrand" | gzip -c > $sdir/reads.1.genome.bed.gz
 
     echo -n "
-    samtools view -@ 1 -b -F 4 -F 256 -F 1024 -F 2048 $SAMPLE_DIR/$name/align/reads.1.Aligned.final.bam \
+    samtools view -@ 1 -b -F 4 -F 256 -F 1024 -F 2048 $sampledir/$name/align/reads.1.Aligned.final.bam \
         | bedtools bamtobed -i stdin \
         | gzip -c >> $sdir/reads.1.genome.bed.gz" # sed '1i chr\tstart\tend\tname\tscore\tstrand' |
 done > run/cmds.$rnd.txt
@@ -176,7 +176,7 @@ for name in "${samples[@]}"; do
 
     echo -n "
     java -jar remove-softlip.jar --samoutputformat BAM \
-        $SAMPLE_DIR/$name/align/reads.1.Aligned.final.bam > $sdir/tmp.sf.bam; \
+        $sampledir/$name/align/reads.1.Aligned.final.bam > $sdir/tmp.sf.bam; \
     samtools view -@ 1 -F 4 -F 256 -F 1024 -F 2048 -F 16 $sdir/tmp.sf.bam \
         | cut -f1,10  \
         | gzip -c >> $sdir/reads.1.genome.sequence-reads.txt.gz; \
@@ -263,7 +263,7 @@ for name in "${samples[@]}"; do
     zcat $sdir/reads.1.genome.clean.bed.gz \
         | ./src/R/pirna-distro-counts.R --ifile stdin --unique --type seq --genome --trimseq 25 --ofile $sdir/reads.1.genome.seqs-genome"
 done > run/cmds.$rnd.txt
-cat run/cmds.$rnd.txt | rush '{}' -j 6 --verbose -c -C run/cmds.$rnd.txt.done && rm run/cmds.$rnd.txt run/cmds.$rnd.txt.done
+cat run/cmds.$rnd.txt | rush '{}' -j 6 --verbose && rm run/cmds.$rnd.txt
 
 # add sample names
 for name in "${samples[@]}"; do
